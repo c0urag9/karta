@@ -16,12 +16,13 @@ class ChatScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
-                    const Icon(Icons.home, size: 28),
-                    const SizedBox(width: 10),
-                    const Text(
+                    Icon(Icons.home, size: 28),
+                    SizedBox(width: 10),
+                    Text(
                       'Чат бизнес-навигатор',
+
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -44,7 +45,7 @@ class ChatScreen extends StatelessWidget {
                 const Text('Шаблоны промптов', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 10),
                 const Text('• Помогите увеличить продажи'),
-                const Text('• Как оптимизировать расходы'),
+                const Text('• расходы'),
                 const Text('• Хочу масштабировать бизнес'),
                 const Text('• Нужно автоматизировать процессы'),
               ],
@@ -55,20 +56,20 @@ class ChatScreen extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                Expanded(
+                const Expanded(
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.smart_toy_outlined, size: 100, color: Colors.blue),
-                        const SizedBox(height: 30),
-                        const Text(
+                        Icon(Icons.smart_toy_outlined, size: 100, color: Colors.blue),
+                        SizedBox(height: 30),
+                        Text(
                           'Добро пожаловать в\nБизнес-навигатор',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                         ),
-                        const SizedBox(height: 16),
-                        const Text(
+                        SizedBox(height: 16),
+                        Text(
                           'Опишите ваш бизнес или пройдите анкету',
                           textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 16, color: Colors.grey),

@@ -12,7 +12,8 @@ class WelcomeChat extends StatelessWidget {
           Icon(Icons.smart_toy_outlined, size: 90, color: Colors.blue[300]),
           const SizedBox(height: 32),
           const Text(
-            'Добро пожаловать в\nБизнес-навигатор',
+            'в\nБизнес-навигатор',
+
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           ),

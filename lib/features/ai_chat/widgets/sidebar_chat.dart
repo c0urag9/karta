@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'prompt_template_item.dart';
+import 'package:my_business_app/features/audit/audit_screen.dart';
 
 class SidebarChat extends StatelessWidget {
   const SidebarChat({super.key});
@@ -8,63 +9,63 @@ class SidebarChat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 280,
-      decoration: const BoxDecoration(
-        border: Border(right: BorderSide(color: Colors.grey, width: 0.5)),
-      ),
+      color: const Color(0xFFF8F9FA),
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          // ========== ЗАГОЛОВОК ==========
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 12),
             child: Row(
               children: [
-                const Icon(Icons.home, size: 28),
-                const SizedBox(width: 10),
-                const Text(
+                Icon(Icons.home, size: 26),
+                SizedBox(width: 10),
+                Text(
                   'Чат бизнес-навигатор',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
           ),
-          const Divider(),
+          const Divider(height: 1, thickness: 1),
 
+          const SizedBox(height: 16),
+
+          // ========== КНОПКА "ПРОЙТИ АНКЕТУ" ==========
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.add),
-                  label: const Text('+ Новый чат'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: OutlinedButton.icon(
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (context) => AuditScreen(),   // ← УБРАЛИ const
+                );
+              },
+              icon: const Icon(Icons.assignment_outlined),
+              label: const Text('Пройти анкету'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.assignment_outlined),
-                  label: const Text('Пройти анкету'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
 
-          const Divider(),
+          const SizedBox(height: 20),
 
+          // ========== ИСТОРИЯ ЧАТОВ ==========
           const Padding(
-            padding: EdgeInsets.fromLTRB(16, 20, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('История чатов', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                'История чатов',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
 
+          // Активный чат (выделенный)
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 12),
             padding: const EdgeInsets.all(12),
@@ -74,20 +75,29 @@ class SidebarChat extends StatelessWidget {
             ),
             child: const Row(
               children: [
-                Icon(Icons.chat_bubble_outline),
+                Icon(Icons.chat_bubble_outline, size: 20),
                 SizedBox(width: 10),
-                Text('История чатов'),
+                Text('Новый чат'),
               ],
             ),
           ),
 
+          const SizedBox(height: 8),
+
+          // ========== РАЗДЕЛИТЕЛЬ ==========
+          const Divider(height: 20, thickness: 1),
+
+          // ========== ШАБЛОНЫ ПРОМПТОВ (ВНИЗУ) ==========
           const Spacer(),
 
           const Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Text('Шаблоны промптов', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text(
+                'Шаблоны промптов',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ),
 
@@ -96,7 +106,7 @@ class SidebarChat extends StatelessWidget {
           const PromptTemplateItem(text: 'Хочу масштабировать бизнес'),
           const PromptTemplateItem(text: 'Нужно автоматизировать процессы'),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );

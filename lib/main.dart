@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'features/ai_chat/chat_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,16 +13,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Бизнес Навигатор',
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Бизнес Навигатор')),
-        body: const Center(
-          child: Text(
-            'Главный экран работает\n\nСейчас будем подключать чат...',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20),
-          ),
-        ),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        useMaterial3: true,
+        scaffoldBackgroundColor: Colors.white,
       ),
+      home: const ChatScreen(),
     );
   }
 }

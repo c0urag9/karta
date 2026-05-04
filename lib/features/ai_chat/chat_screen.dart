@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'widgets/sidebar_chat.dart';
+import 'widgets/welcome_chat.dart';
+import 'widgets/chat_input_field.dart';
 
 class ChatScreen extends StatelessWidget {
   const ChatScreen({super.key});
@@ -8,98 +11,55 @@ class ChatScreen extends StatelessWidget {
     return Scaffold(
       body: Row(
         children: [
-          // Левая боковая панель
-          Container(
-            width: 280,
-            color: Colors.grey[100],
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.home, size: 28),
-                    SizedBox(width: 10),
-                    Text(
-                      'Чат бизнес-навигатор',
+          // Левая панель
+          const SidebarChat(),
 
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.add),
-                  label: const Text('+ Новый чат'),
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-                ),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.assignment_outlined),
-                  label: const Text('Пройти анкету'),
-                  style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
-                ),
-                const SizedBox(height: 40),
-                const Text('Шаблоны промптов', style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                const Text('• Помогите увеличить продажи'),
-                const Text('• расходы'),
-                const Text('• Хочу масштабировать бизнес'),
-                const Text('• Нужно автоматизировать процессы'),
-              ],
-            ),
-          ),
+          // Вертикальная разделительная линия
+          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE0E0E0)),
 
-          // Основная область
+          // Правая основная часть
           Expanded(
             child: Column(
               children: [
-                const Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.smart_toy_outlined, size: 100, color: Colors.blue),
-                        SizedBox(height: 30),
-                        Text(
-                          'Добро пожаловать в\nБизнес-навигатор',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'Опишите ваш бизнес или пройдите анкету',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                // Верхняя панель с кнопками
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                  decoration: const BoxDecoration(
+                    border: Border(bottom: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+                  ),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Expanded(
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: 'Опишите ваш бизнес или задайте вопрос...',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(30)),
-                            filled: true,
-                            fillColor: Colors.grey[100],
-                          ),
+                      ElevatedButton.icon(
+                        onPressed: () {},
+                        icon: const Icon(Icons.add),
+                        label: const Text('+ Новый чат'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      IconButton(
-                        icon: const Icon(Icons.send, color: Colors.blue),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
                         onPressed: () {},
+                        icon: const Icon(Icons.assignment_outlined),
+                        label: const Text('Пройти анкету'),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
                       ),
                     ],
                   ),
                 ),
+
+                // Центральное приветствие
+                const Expanded(
+                  child: WelcomeChat(),
+                ),
+
+                // Поле ввода
+                const ChatInputField(),
               ],
             ),
           ),

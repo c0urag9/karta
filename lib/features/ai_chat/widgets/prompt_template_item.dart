@@ -9,12 +9,17 @@ class PromptTemplateItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       dense: true,
-      leading: const Icon(Icons.description_outlined, size: 20),
-      title: Text(text, style: const TextStyle(fontSize: 14)),
+      leading: const Icon(Icons.lightbulb_outline, size: 20, color: Colors.grey),
+      title: Text(text),
       onTap: () {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Выбран промпт: $text')),
+          SnackBar(
+            content: Text('Промпт выбран: "$text"'),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
         );
+        // Позже здесь будет вставка текста в поле ввода
       },
     );
   }

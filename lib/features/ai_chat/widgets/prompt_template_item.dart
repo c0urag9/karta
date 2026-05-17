@@ -1,26 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/chat_provider.dart';
 
 class PromptTemplateItem extends StatelessWidget {
   final String text;
-
   const PromptTemplateItem({super.key, required this.text});
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      leading: const Icon(Icons.lightbulb_outline, size: 20, color: Colors.grey),
-      title: Text(text),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Промпт выбран: "$text"'),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        // Позже здесь будет вставка текста в поле ввода
-      },
+    return InkWell(
+      onTap: () => context.read<ChatProvider>().sendMessage(text),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        child: Row(children: [
+          const Icon(Icons.lightbulb_outline, size: 16, color: Colors.grey),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text,
+              style: const TextStyle(fontSize: 13, color: Colors.black87))),
+        ]),
+      ),
     );
   }
 }

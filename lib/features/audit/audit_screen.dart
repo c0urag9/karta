@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:my_business_app/features/roadmap/roadmap_provider.dart';
 
 class AuditData {
   String companyName = '';
@@ -74,21 +76,17 @@ class _AuditScreenState extends State<AuditScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 24, spreadRadius: 4)],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha:0.18), blurRadius: 24, spreadRadius: 4)],
         ),
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildStepIndicator(),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(32, 24, 32, 8),
-                child: _buildCurrentStep(),
-              ),
-            ),
-            _buildNavButtons(),
-          ],
-        ),
+        child: Column(children: [
+          _buildHeader(),
+          _buildStepIndicator(),
+          Expanded(child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(32, 24, 32, 8),
+            child: _buildCurrentStep(),
+          )),
+          _buildNavButtons(),
+        ]),
       ),
     );
   }
@@ -99,7 +97,7 @@ class _AuditScreenState extends State<AuditScreen> {
     child: Row(children: [
       Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(color: Colors.blue.withValues(alpha:0.1), borderRadius: BorderRadius.circular(10)),
         child: const Icon(Icons.assignment_outlined, color: Colors.blue, size: 22),
       ),
       const SizedBox(width: 14),
@@ -129,7 +127,8 @@ class _AuditScreenState extends State<AuditScreen> {
                 color: isDone ? Colors.green : isActive ? Colors.blue : Colors.grey[200],
                 shape: BoxShape.circle,
               ),
-              child: Icon(isDone ? Icons.check : _steps[i]['icon'] as IconData, size: 16, color: (isDone || isActive) ? Colors.white : Colors.grey),
+              child: Icon(isDone ? Icons.check : _steps[i]['icon'] as IconData,
+                  size: 16, color: (isDone || isActive) ? Colors.white : Colors.grey),
             ),
             const SizedBox(width: 6),
             Text(_steps[i]['label'] as String, style: TextStyle(
@@ -163,19 +162,47 @@ class _AuditScreenState extends State<AuditScreen> {
           onPressed: _onNext,
           icon: Icon(currentStep == totalSteps - 1 ? Icons.check_circle_outline : Icons.arrow_forward, size: 16),
           label: Text(currentStep == totalSteps - 1 ? 'Завершить анкету' : 'Далее'),
-          style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: currentStep == totalSteps - 1 ? Colors.green : Colors.blue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         ),
       ]),
     ]),
   );
 
+  // ─── ИСПРАВЛЕНО: вызывает RoadmapProvider.generate() ───
   void _onNext() {
     if (currentStep < totalSteps - 1) {
       setState(() => currentStep++);
     } else {
+      // Сохраняем provider до закрытия диалога
+      final roadmapProvider = context.read<RoadmapProvider>();
+      final auditData = data;
+
       Navigator.pop(context);
+
+      // Запускаем генерацию дорожной карты
+      if (auditData.wantsRoadmap) {
+        roadmapProvider.generate(auditData);
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Анкета для "${data.companyName.isNotEmpty ? data.companyName : 'вашей компании'}" завершена!')),
+        SnackBar(
+          content: Row(children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 10),
+            Text(auditData.wantsRoadmap
+                ? 'Анкета завершена! Генерируем дорожную карту...'
+                : 'Анкета для "${auditData.companyName.isNotEmpty ? auditData.companyName : 'компании'}" завершена!'),
+          ]),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -191,8 +218,6 @@ class _AuditScreenState extends State<AuditScreen> {
       default: return const SizedBox();
     }
   }
-
-  // ==================== ШАГИ ====================
 
   Widget _buildStepGeneral() => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     _stepTitle('Общая информация о компании', 'Расскажите нам о вашем бизнесе'),
@@ -234,6 +259,7 @@ class _AuditScreenState extends State<AuditScreen> {
     ]),
     const SizedBox(height: 20),
     _sectionLabel('Управление финансами'),
+    const SizedBox(height: 12),
     Row(children: [
       Expanded(child: _switchTile('Ведётся бухгалтерский учёт', Icons.book_outlined, data.hasAccounting, (v) => setState(() => data.hasAccounting = v))),
       const SizedBox(width: 16),
@@ -247,15 +273,13 @@ class _AuditScreenState extends State<AuditScreen> {
       _stepTitle('Маркетинг и продажи', 'Как вы привлекаете и удерживаете клиентов'),
       const SizedBox(height: 24),
       _sectionLabel('Каналы привлечения клиентов'),
+      const SizedBox(height: 10),
       Wrap(spacing: 8, runSpacing: 8, children: channels.map((ch) {
         final selected = data.selectedChannels.contains(ch);
         return FilterChip(
-          label: Text(ch),
-          selected: selected,
-          onSelected: (v) => setState(() {
-            if (v) data.selectedChannels.add(ch);
-            else data.selectedChannels.remove(ch);
-          }),
+          label: Text(ch), selected: selected,
+          onSelected: (v) => setState(() { if (v) data.selectedChannels.add(ch); else data.selectedChannels.remove(ch); }),
+          selectedColor: Colors.blue.withValues(alpha:0.15), checkmarkColor: Colors.blue,
         );
       }).toList()),
       const SizedBox(height: 20),
@@ -268,6 +292,7 @@ class _AuditScreenState extends State<AuditScreen> {
       ]),
       const SizedBox(height: 20),
       _sectionLabel('Инструменты продаж'),
+      const SizedBox(height: 12),
       Row(children: [
         Expanded(child: _switchTile('Есть CRM-система', Icons.business_center, data.hasCRM, (v) => setState(() => data.hasCRM = v))),
         const SizedBox(width: 16),
@@ -292,6 +317,7 @@ class _AuditScreenState extends State<AuditScreen> {
     ]),
     const SizedBox(height: 20),
     _sectionLabel('Зрелость процессов'),
+    const SizedBox(height: 12),
     Row(children: [
       Expanded(child: _switchTile('Есть автоматизация процессов', Icons.precision_manufacturing_outlined, data.hasAutomation, (v) => setState(() => data.hasAutomation = v))),
       const SizedBox(width: 16),
@@ -313,6 +339,14 @@ class _AuditScreenState extends State<AuditScreen> {
     _field('Ключевые роли', Icons.badge_outlined, initial: data.keyRoles, onChanged: (v) => data.keyRoles = v),
     const SizedBox(height: 16),
     _field('План найма на год', Icons.person_search_outlined, initial: data.hiringPlan, onChanged: (v) => data.hiringPlan = v, maxLines: 2),
+    const SizedBox(height: 20),
+    _sectionLabel('HR-инфраструктура'),
+    const SizedBox(height: 12),
+    Row(children: [
+      Expanded(child: _switchTile('Есть HR-отдел', Icons.manage_accounts_outlined, data.hasHRDept, (v) => setState(() => data.hasHRDept = v))),
+      const SizedBox(width: 16),
+      Expanded(child: _switchTile('Проводится обучение', Icons.school_outlined, data.hasTraining, (v) => setState(() => data.hasTraining = v))),
+    ]),
   ]);
 
   Widget _buildStepStrategy() {
@@ -323,25 +357,43 @@ class _AuditScreenState extends State<AuditScreen> {
       _dropdown('Уровень цифровизации', _digitalLevels, value: data.digitalLevel, onChanged: (v) => setState(() => data.digitalLevel = v ?? '')),
       const SizedBox(height: 16),
       _sectionLabel('Используемые цифровые инструменты'),
+      const SizedBox(height: 10),
       Wrap(spacing: 8, runSpacing: 8, children: tools.map((t) {
         final selected = data.digitalTools.contains(t);
         return FilterChip(
-          label: Text(t),
-          selected: selected,
-          onSelected: (v) => setState(() {
-            if (v) data.digitalTools.add(t);
-            else data.digitalTools.remove(t);
-          }),
+          label: Text(t), selected: selected,
+          onSelected: (v) => setState(() { if (v) data.digitalTools.add(t); else data.digitalTools.remove(t); }),
+          selectedColor: Colors.purple.withValues(alpha:0.12), checkmarkColor: Colors.purple,
         );
       }).toList()),
       const SizedBox(height: 20),
       _field('Стратегические цели', Icons.flag_outlined, initial: data.strategicGoals, onChanged: (v) => data.strategicGoals = v, maxLines: 2),
       const SizedBox(height: 16),
       _field('Главные вызовы', Icons.report_problem_outlined, initial: data.mainChallenges, onChanged: (v) => data.mainChallenges = v, maxLines: 2),
+      const SizedBox(height: 20),
+      // Тогл генерации дорожной карты
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha:0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withValues(alpha:0.2)),
+        ),
+        child: Row(children: [
+          Switch(value: data.wantsRoadmap, onChanged: (v) => setState(() => data.wantsRoadmap = v), activeColor: Colors.blue),
+          const SizedBox(width: 12),
+          const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Сгенерировать дорожную карту', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            Text('ИИ создаст персональный план действий на 3, 6 и 12 месяцев', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          ])),
+          const Icon(Icons.auto_awesome, color: Colors.blue),
+        ]),
+      ),
     ]);
   }
 
-  // ==================== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ====================
+  // ── Вспомогательные виджеты ─────────────────
+
   Widget _stepTitle(String title, String subtitle) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
     const SizedBox(height: 4),
@@ -350,66 +402,58 @@ class _AuditScreenState extends State<AuditScreen> {
 
   Widget _sectionLabel(String label) => Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600));
 
-  Widget _field(String label, IconData icon, {required Function(String) onChanged, String hint = '', String initial = '', int maxLines = 1, TextInputType inputType = TextInputType.text}) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-      const SizedBox(height: 6),
-      TextFormField(
-        initialValue: initial,
-        onChanged: onChanged,
-        maxLines: maxLines,
-        keyboardType: inputType,
-        decoration: InputDecoration(
-          hintText: hint,
-          prefixIcon: Icon(icon, size: 18, color: Colors.grey),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          filled: true,
-          fillColor: const Color(0xFFFAFAFA),
+  Widget _field(String label, IconData icon, {required Function(String) onChanged, String hint = '', String initial = '', int maxLines = 1, TextInputType inputType = TextInputType.text}) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        TextFormField(
+          initialValue: initial, onChanged: onChanged, maxLines: maxLines, keyboardType: inputType,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, size: 18, color: Colors.grey),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            filled: true, fillColor: const Color(0xFFFAFAFA),
+          ),
         ),
-      ),
-    ],
-  );
+      ]);
 
-    Widget _dropdown(String label, List<String> items, {String? value, required Function(String?) onChanged}) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-      const SizedBox(height: 6),
-      DropdownButtonFormField<String>(
-        value: value != null && items.contains(value) ? value : null, // ← Вот исправление
-        isExpanded: true,
-        hint: const Text('Выберите...', style: TextStyle(fontSize: 13, color: Colors.grey)),
-        decoration: InputDecoration(
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-          filled: true,
-          fillColor: const Color(0xFFFAFAFA),
+  Widget _dropdown(String label, List<String> items, {String? value, required Function(String?) onChanged}) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          value: value != null && items.contains(value) ? value : null,
+          isExpanded: true,
+          hint: const Text('Выберите...', style: TextStyle(fontSize: 13, color: Colors.grey)),
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            filled: true, fillColor: const Color(0xFFFAFAFA),
+          ),
+          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+          onChanged: onChanged,
         ),
-        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: onChanged,
-      ),
-    ],
-  );
+      ]);
 
-  Widget _switchTile(String label, IconData icon, bool value, Function(bool) onChanged) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: value ? Colors.blue.withOpacity(0.06) : const Color(0xFFF8F9FA),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: value ? Colors.blue.withOpacity(0.3) : const Color(0xFFE0E0E0)),
-    ),
-    child: Row(children: [
-      Icon(icon, size: 18, color: value ? Colors.blue : Colors.grey),
-      const SizedBox(width: 8),
-      Expanded(child: Text(label)),
-      Switch(value: value, onChanged: onChanged, activeColor: Colors.blue),
-    ]),
-  );
+  Widget _switchTile(String label, IconData icon, bool value, Function(bool) onChanged) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: value ? Colors.blue.withValues(alpha:0.06) : const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: value ? Colors.blue.withValues(alpha:0.3) : const Color(0xFFE0E0E0)),
+        ),
+        child: Row(children: [
+          Icon(icon, size: 18, color: value ? Colors.blue : Colors.grey),
+          const SizedBox(width: 8),
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 13))),
+          Switch(value: value, onChanged: onChanged, activeColor: Colors.blue,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+        ]),
+      );
 
-  // Справочники
-  static const _industries = ['IT и технологии', 'Торговля', 'Производство', 'Строительство', 'Логистика', 'Общественное питание', 'Другое'];
+  static const _industries = ['IT и технологии', 'Торговля (розничная)', 'Торговля (оптовая)', 'Производство', 'Строительство', 'Логистика', 'Общественное питание', 'Медицина', 'Образование', 'Финансы', 'Маркетинг и реклама', 'Другое'];
   static const _legalForms = ['ООО', 'ИП', 'АО', 'Самозанятый'];
-  static const _growthOptions = ['Снизилась', 'Не изменилась', 'Выросла'];
-  static const _turnoverOptions = ['Низкая', 'Умеренная', 'Высокая'];
-  static const _digitalLevels = ['Минимальный', 'Базовый', 'Средний', 'Продвинутый', 'Высокий'];
+  static const _growthOptions = ['Снизилась более чем на 20%', 'Снизилась на 5–20%', 'Не изменилась', 'Выросла на 5–20%', 'Выросла более чем на 20%'];
+  static const _turnoverOptions = ['Низкая (< 5%)', 'Умеренная (5–15%)', 'Высокая (15–30%)', 'Очень высокая (> 30%)'];
+  static const _digitalLevels = ['Минимальный — только Excel', 'Базовый — есть сайт', 'Средний — CRM или 1С', 'Продвинутый — несколько систем', 'Высокий — всё автоматизировано'];
 }

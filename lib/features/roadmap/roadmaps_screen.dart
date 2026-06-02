@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'roadmap_provider.dart';
+import 'roadmap_pdf_export.dart';
+import 'package:my_business_app/features/expert/expert_screen.dart';
 
 class RoadmapsScreen extends StatefulWidget {
   const RoadmapsScreen({super.key});
@@ -29,29 +31,29 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
   Widget build(BuildContext context) {
     return Consumer<RoadmapProvider>(
       builder: (context, provider, _) {
-        if (provider.isLoading) return _buildLoading();
-        if (provider.error != null) return _buildError(provider);
+        if (provider.isLoading) return _buildLoading(context);
+        if (provider.error != null) return _buildError(context, provider);
         if (!provider.hasRoadmap) return _buildEmpty(context);
         return _buildRoadmap(context, provider.roadmap!, provider);
       },
     );
   }
 
-  // ── Состояние загрузки ─────────────────────
-  Widget _buildLoading() => const Scaffold(
-    body: Center(
+  Widget _buildLoading(BuildContext context) => Scaffold(
+    appBar: _simpleAppBar(context, 'Дорожная карта'),
+    body: const Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         CircularProgressIndicator(color: Color(0xFF534AB7)),
         SizedBox(height: 24),
         Text('ИИ анализирует ваш бизнес...', style: TextStyle(fontSize: 16, color: Colors.grey)),
         SizedBox(height: 8),
-        Text('Это займёт 10–20 секунд', style: TextStyle(fontSize: 13, color: Colors.grey)),
+        Text('Это займёт 10–30 секунд', style: TextStyle(fontSize: 13, color: Colors.grey)),
       ]),
     ),
   );
 
-  // ── Ошибка ─────────────────────────────────
-  Widget _buildError(RoadmapProvider provider) => Scaffold(
+  Widget _buildError(BuildContext context, RoadmapProvider provider) => Scaffold(
+    appBar: _simpleAppBar(context, 'Дорожная карта'),
     body: Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.error_outline, size: 64, color: Colors.red),
@@ -59,22 +61,28 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
         const Text('Не удалось создать дорожную карту',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text(provider.error ?? '', textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.grey)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(provider.error ?? '',
+              textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+        ),
         const SizedBox(height: 24),
         ElevatedButton.icon(
           onPressed: provider.clear,
           icon: const Icon(Icons.refresh),
           label: const Text('Попробовать снова'),
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF534AB7),
-              foregroundColor: Colors.white),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF534AB7), foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         ),
       ]),
     ),
   );
 
-  // ── Пустой экран (нет карты) ───────────────
   Widget _buildEmpty(BuildContext context) => Scaffold(
+    appBar: _simpleAppBar(context, 'Дорожная карта'),
     body: Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Icon(Icons.map_outlined, size: 80, color: Colors.grey[300]),
@@ -85,28 +93,79 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
         const Text('Пройдите анкету бизнеса, и ИИ составит\nперсональный план развития на 12 месяцев',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 15, color: Colors.grey, height: 1.5)),
-        const SizedBox(height: 32),
-        ElevatedButton.icon(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.assignment_outlined),
-          label: const Text('Пройти анкету'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF534AB7),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
       ]),
     ),
   );
 
-  // ── Основной экран с картой ────────────────
+  // ── Основной экран ─────────────────────────
   Widget _buildRoadmap(BuildContext context, Roadmap roadmap, RoadmapProvider provider) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              roadmap.companyName.isNotEmpty ? roadmap.companyName : 'Дорожная карта',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A1A2E)),
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text('Создана ${_formatDate(roadmap.createdAt)}',
+                style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ])),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined, color: Colors.grey, size: 22),
+            tooltip: 'Экспорт в PDF',
+            onPressed: () => RoadmapPdfExport.export(context, roadmap),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh_outlined, color: Colors.grey, size: 22),
+            tooltip: 'Пересоздать',
+            onPressed: () => _showRegenerateDialog(context, provider),
+          ),
+        ]),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: Color(0xFFEEEEF0)),
+        ),
+      ),
+
+      // ── Две кнопки справа снизу ──
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'experts',
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => ExpertScreen())),
+            backgroundColor: const Color(0xFF534AB7),
+            icon: const Icon(Icons.people_outline, color: Colors.white, size: 20),
+            label: const Text('Эксперты',
+                style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+            elevation: 3,
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'back',
+            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+            backgroundColor: Colors.white,
+            elevation: 3,
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF534AB7), size: 20),
+            label: const Text('Назад в чат',
+                style: TextStyle(color: Color(0xFF534AB7), fontSize: 14, fontWeight: FontWeight.w600)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50),
+              side: const BorderSide(color: Color(0xFF534AB7), width: 1.5),
+            ),
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
       body: Column(children: [
-        _buildHeader(roadmap, provider),
         _buildSummaryCard(roadmap),
         _buildStats(roadmap),
         _buildTabBar(),
@@ -115,42 +174,23 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
     );
   }
 
-  // ── Шапка ──────────────────────────────────
-  Widget _buildHeader(Roadmap roadmap, RoadmapProvider provider) => Container(
-    color: Colors.white,
-    padding: const EdgeInsets.fromLTRB(24, 16, 16, 0),
-    child: Row(children: [
-      Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: const Color(0xFF534AB7).withValues(alpha:0.1),
-            borderRadius: BorderRadius.circular(10)),
-        child: const Icon(Icons.map, color: Color(0xFF534AB7), size: 22),
-      ),
-      const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Дорожная карта — ${roadmap.companyName}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            overflow: TextOverflow.ellipsis),
-        Text('Создана ${_formatDate(roadmap.createdAt)}',
-            style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ])),
-      IconButton(
-        icon: const Icon(Icons.refresh_outlined),
-        tooltip: 'Пересоздать',
-        onPressed: () => _showRegenerateDialog(context, provider),
-      ),
-      IconButton(
-        icon: const Icon(Icons.share_outlined),
-        tooltip: 'Экспорт',
-        onPressed: () => _showExportSnack(context),
-      ),
-    ]),
+  // ── Простой AppBar с кнопкой назад ─────────
+  AppBar _simpleAppBar(BuildContext context, String title) => AppBar(
+    backgroundColor: Colors.white, elevation: 0,
+    leading: TextButton.icon(
+      onPressed: () => Navigator.pop(context),
+      icon: const Icon(Icons.arrow_back, size: 16, color: Color(0xFF534AB7)),
+      label: const Text('Чат', style: TextStyle(color: Color(0xFF534AB7), fontSize: 14)),
+    ),
+    leadingWidth: 90,
+    title: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF1A1A2E))),
+    bottom: const PreferredSize(preferredSize: Size.fromHeight(1), child: Divider(height: 1)),
   );
 
-  // ── Карточка резюме ────────────────────────
+  // ── Резюме ─────────────────────────────────
   Widget _buildSummaryCard(Roadmap roadmap) => Container(
     color: Colors.white,
-    padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
     child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -169,39 +209,38 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
     ),
   );
 
-  // ── Статистика по периодам ─────────────────
+  // ── Статистика ─────────────────────────────
   Widget _buildStats(Roadmap roadmap) => Container(
     color: Colors.white,
-    padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
     child: Row(children: TaskPeriod.values.map((p) {
-      final count = roadmap.byPeriod(p).length;
-      final done = roadmap.byPeriod(p).where((t) => t.status == TaskStatus.done).length;
+      final count    = roadmap.byPeriod(p).length;
+      final done     = roadmap.byPeriod(p).where((t) => t.status == TaskStatus.done).length;
       final progress = count > 0 ? done / count : 0.0;
-      final colors = [const Color(0xFF1D9E75), const Color(0xFF378ADD), const Color(0xFF534AB7)];
-      final idx = p.index;
+      final colors   = [const Color(0xFF1D9E75), const Color(0xFF378ADD), const Color(0xFF534AB7)];
+      final idx      = p.index;
       return Expanded(child: Container(
         margin: EdgeInsets.only(right: idx < 2 ? 10 : 0),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: colors[idx].withValues(alpha:0.07),
+          color: colors[idx].withOpacity(0.07),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: colors[idx].withValues(alpha:0.2)),
+          border: Border.all(color: colors[idx].withOpacity(0.2)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(p.shortLabel, style: TextStyle(fontSize: 12, color: colors[idx], fontWeight: FontWeight.w600)),
+          Text(p.shortLabel,
+              style: TextStyle(fontSize: 12, color: colors[idx], fontWeight: FontWeight.w600)),
           const SizedBox(height: 6),
           Text('$count задач', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress, minHeight: 4,
-              backgroundColor: colors[idx].withValues(alpha:0.15),
-              color: colors[idx],
-            ),
+            child: LinearProgressIndicator(value: progress, minHeight: 4,
+                backgroundColor: colors[idx].withOpacity(0.15), color: colors[idx]),
           ),
           const SizedBox(height: 4),
-          Text('$done из $count выполнено', style: TextStyle(fontSize: 11, color: colors[idx])),
+          Text('$done из $count выполнено',
+              style: TextStyle(fontSize: 11, color: colors[idx])),
         ]),
       ));
     }).toList()),
@@ -220,27 +259,24 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
     ),
   );
 
-  // ── Содержимое табов ───────────────────────
+  // ── Список задач ───────────────────────────
   Widget _buildTabContent(Roadmap roadmap, RoadmapProvider provider) => TabBarView(
     controller: _tabController,
     children: TaskPeriod.values.map((p) {
       final tasks = roadmap.byPeriod(p);
-      if (tasks.isEmpty) return _buildEmptyPeriod();
+      if (tasks.isEmpty) return const Center(
+          child: Text('Нет задач для этого периода', style: TextStyle(color: Colors.grey)));
       return ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         itemCount: tasks.length,
         itemBuilder: (ctx, i) => _buildTaskCard(tasks[i], provider),
       );
     }).toList(),
   );
 
-  Widget _buildEmptyPeriod() => const Center(
-    child: Text('Нет задач для этого периода', style: TextStyle(color: Colors.grey)),
-  );
-
   // ── Карточка задачи ────────────────────────
   Widget _buildTaskCard(RoadmapTask task, RoadmapProvider provider) {
-    final isDone = task.status == TaskStatus.done;
+    final isDone       = task.status == TaskStatus.done;
     final isInProgress = task.status == TaskStatus.inProgress;
 
     return Container(
@@ -250,22 +286,20 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isDone
-              ? const Color(0xFF1D9E75).withValues(alpha:0.3)
+              ? const Color(0xFF1D9E75).withOpacity(0.3)
               : isInProgress
-                  ? const Color(0xFF534AB7).withValues(alpha:0.3)
+                  ? const Color(0xFF534AB7).withOpacity(0.3)
                   : const Color(0xFFE8E8E8),
         ),
       ),
       child: Column(children: [
-        // ── Верхняя строка ──
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 10, 8),
           child: Row(children: [
-            // Категория
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: task.category.color.withValues(alpha:0.1),
+                color: task.category.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -276,38 +310,27 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
               ]),
             ),
             const SizedBox(width: 8),
-            // Приоритет
             _priorityBadge(task.priority),
             const Spacer(),
-            // Статус dropdown
             _statusDropdown(task, provider),
           ]),
         ),
-        // ── Заголовок ──
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
           child: Row(children: [
-            if (isDone) const Padding(
-              padding: EdgeInsets.only(right: 8),
-              child: Icon(Icons.check_circle, color: Color(0xFF1D9E75), size: 18),
-            ),
-            Expanded(child: Text(task.title,
-              style: TextStyle(
-                fontSize: 14, fontWeight: FontWeight.w600,
-                decoration: isDone ? TextDecoration.lineThrough : null,
-                color: isDone ? Colors.grey : Colors.black87,
-              ),
-            )),
+            if (isDone) const Padding(padding: EdgeInsets.only(right: 8),
+                child: Icon(Icons.check_circle, color: Color(0xFF1D9E75), size: 18)),
+            Expanded(child: Text(task.title, style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600,
+              decoration: isDone ? TextDecoration.lineThrough : null,
+              color: isDone ? Colors.grey : Colors.black87,
+            ))),
           ]),
         ),
-        // ── Описание ──
         if (task.description.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-            child: Text(task.description,
-                style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.4)),
-          ),
-        // ── Ожидаемый результат ──
+          Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+              child: Text(task.description,
+                  style: const TextStyle(fontSize: 13, color: Colors.grey, height: 1.4))),
         if (task.result.isNotEmpty)
           Container(
             margin: const EdgeInsets.fromLTRB(14, 0, 14, 12),
@@ -334,23 +357,20 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
-        color: colors[p].withValues(alpha:0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(labels[p], style: TextStyle(fontSize: 11, color: colors[p], fontWeight: FontWeight.w500)),
+          color: colors[p].withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+      child: Text(labels[p],
+          style: TextStyle(fontSize: 11, color: colors[p], fontWeight: FontWeight.w500)),
     );
   }
 
   Widget _statusDropdown(RoadmapTask task, RoadmapProvider provider) {
     final items = {
-      TaskStatus.pending:    ('Не начата',  Colors.grey),
-      TaskStatus.inProgress: ('В работе',   const Color(0xFF534AB7)),
-      TaskStatus.done:       ('Выполнено',  const Color(0xFF1D9E75)),
+      TaskStatus.pending:    ('Не начата', Colors.grey),
+      TaskStatus.inProgress: ('В работе',  const Color(0xFF534AB7)),
+      TaskStatus.done:       ('Выполнено', const Color(0xFF1D9E75)),
     };
     return DropdownButton<TaskStatus>(
-      value: task.status,
-      underline: const SizedBox(),
-      isDense: true,
+      value: task.status, underline: const SizedBox(), isDense: true,
       style: const TextStyle(fontSize: 12),
       items: items.entries.map((e) => DropdownMenuItem(
         value: e.key,
@@ -365,7 +385,6 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
     );
   }
 
-  // ── Диалог пересоздания ────────────────────
   void _showRegenerateDialog(BuildContext context, RoadmapProvider provider) {
     showDialog(
       context: context,
@@ -375,20 +394,18 @@ class _RoadmapsScreenState extends State<RoadmapsScreen>
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Отмена')),
           ElevatedButton(
-            onPressed: () { provider.clear(); Navigator.pop(context); },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF534AB7), foregroundColor: Colors.white),
+            onPressed: () {
+              provider.clear();
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF534AB7), foregroundColor: Colors.white),
             child: const Text('Пересоздать'),
           ),
         ],
       ),
     );
-  }
-
-  void _showExportSnack(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text('Экспорт в PDF — в следующей версии'),
-      behavior: SnackBarBehavior.floating,
-    ));
   }
 
   String _formatDate(DateTime dt) =>

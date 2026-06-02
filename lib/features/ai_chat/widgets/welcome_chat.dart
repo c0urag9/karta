@@ -67,8 +67,7 @@ class _SuggestionChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        // Отправляем подсказку в чат — через провайдер
-        // context.read<ChatProvider>().sendMessage(text);
+
       },
       borderRadius: BorderRadius.circular(20),
       child: Container(

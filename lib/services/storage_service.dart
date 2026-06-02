@@ -5,7 +5,6 @@ import '../models/chat_message.dart';
 class StorageService {
   static const _chatsKey = 'chats';
 
-  /// Сохранить историю чата
   Future<void> saveChat(String chatId, List<ChatMessage> messages) async {
     final prefs = await SharedPreferences.getInstance();
     final data = messages.map((m) => {
@@ -17,7 +16,6 @@ class StorageService {
     await prefs.setString('$_chatsKey.$chatId', jsonEncode(data));
   }
 
-  /// Загрузить историю чата
   Future<List<ChatMessage>> loadChat(String chatId) async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('$_chatsKey.$chatId');
@@ -31,7 +29,6 @@ class StorageService {
     )).toList();
   }
 
-  /// Список всех сохранённых чатов (ID)
   Future<List<String>> getChatIds() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getKeys()
@@ -40,7 +37,6 @@ class StorageService {
         .toList();
   }
 
-  /// Удалить чат
   Future<void> deleteChat(String chatId) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('$_chatsKey.$chatId');

@@ -45,7 +45,7 @@ class _ChatInputFieldState extends State<ChatInputField> {
             child: KeyboardListener(
               focusNode: FocusNode(),
               onKeyEvent: (event) {
-                // Enter без Shift — отправить
+
                 if (event is KeyDownEvent &&
                     event.logicalKey == LogicalKeyboardKey.enter &&
                     !HardwareKeyboard.instance.isShiftPressed) {

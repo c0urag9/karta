@@ -16,7 +16,7 @@ class SidebarChat extends StatelessWidget {
         border: Border(right: BorderSide(color: Color(0xFFEEEEF0), width: 1)),
       ),
       child: Column(children: [
-        // ── Логотип ──
+        
         Container(
           padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
           child: Row(children: [
@@ -40,7 +40,6 @@ class SidebarChat extends StatelessWidget {
         const Divider(height: 1, color: Color(0xFFEEEEF0)),
         const SizedBox(height: 12),
 
-        // ── Кнопка "Новый чат" ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: InkWell(
@@ -70,7 +69,6 @@ class SidebarChat extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // ── Кнопка "Пройти анкету" ──
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: InkWell(
@@ -95,7 +93,6 @@ class SidebarChat extends StatelessWidget {
 
         const SizedBox(height: 20),
 
-        // ── История чатов ──
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Align(
@@ -152,7 +149,6 @@ class SidebarChat extends StatelessWidget {
         const Divider(height: 1, color: Color(0xFFEEEEF0)),
         const SizedBox(height: 12),
 
-        // ── Шаблоны промптов ──
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Align(

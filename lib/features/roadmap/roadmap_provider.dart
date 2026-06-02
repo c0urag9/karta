@@ -58,12 +58,12 @@ extension TaskCategoryInfo on TaskCategory {
 
   static TaskCategory fromString(String s) {
     switch (s.toLowerCase()) {
-      case 'финансы':       return TaskCategory.finance;
-      case 'маркетинг':     return TaskCategory.marketing;
-      case 'операции':      return TaskCategory.operations;
-      case 'персонал':      return TaskCategory.hr;
-      case 'цифровизация':  return TaskCategory.digital;
-      default:              return TaskCategory.strategy;
+      case 'финансы':      return TaskCategory.finance;
+      case 'маркетинг':    return TaskCategory.marketing;
+      case 'операции':     return TaskCategory.operations;
+      case 'персонал':     return TaskCategory.hr;
+      case 'цифровизация': return TaskCategory.digital;
+      default:             return TaskCategory.strategy;
     }
   }
 }
@@ -111,11 +111,9 @@ class Roadmap {
 }
 
 class RoadmapProvider extends ChangeNotifier {
-
   static const String _token  = '';
   static const String _apiUrl = '';
   static const String _model  = '';
-
 
   Roadmap? _roadmap;
   bool _isLoading = false;
@@ -143,11 +141,7 @@ class RoadmapProvider extends ChangeNotifier {
           'messages': [
             {
               'role': 'system',
-              'content':
-                'Ты — эксперт по развитию малого и среднего бизнеса. '
-                'Создаёшь конкретные, выполнимые дорожные карты. '
-                'Отвечай ТОЛЬКО валидным JSON без markdown-блоков. '
-                'Никакого текста до или после JSON.',
+              'content': 'Ты эксперт МСБ. Отвечай ТОЛЬКО валидным JSON без markdown.',
             },
             {'role': 'user', 'content': _buildPrompt(data)},
           ],
@@ -155,12 +149,12 @@ class RoadmapProvider extends ChangeNotifier {
           'temperature': 0.6,
         }),
       ).timeout(
-        const Duration(seconds: 180),
+        const Duration(seconds: 60),
         onTimeout: () => throw Exception('Превышено время ожидания. Попробуйте снова.'),
       );
 
-      debugPrint('GitHub Models status: ${response.statusCode}');
-      debugPrint('GitHub Models body: ${response.body.substring(0, response.body.length.clamp(0, 500))}');
+      debugPrint('Status: ${response.statusCode}');
+      debugPrint('Body: ${response.body.substring(0, response.body.length.clamp(0, 300))}');
 
       if (response.statusCode != 200) {
         final err = jsonDecode(response.body);
@@ -168,16 +162,8 @@ class RoadmapProvider extends ChangeNotifier {
       }
 
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      // GitHub Models совместим с OpenAI — ответ в choices[0].message.content
       final content = decoded['choices'][0]['message']['content'] as String;
-
-      final clean = content
-          .replaceAll('```json', '')
-          .replaceAll('```', '')
-          .trim();
-
-      debugPrint('Parsed: ${clean.substring(0, clean.length.clamp(0, 300))}');
-
+      final clean   = content.replaceAll('```json', '').replaceAll('```', '').trim();
       final Map<String, dynamic> json = jsonDecode(clean);
       _roadmap = _parseRoadmap(data.companyName, json);
 
@@ -205,47 +191,22 @@ class RoadmapProvider extends ChangeNotifier {
   }
 
   String _buildPrompt(AuditData d) => '''
-Создай дорожную карту развития компании на 12 месяцев.
+Создай дорожную карту МСБ. Верни ТОЛЬКО JSON, без текста до/после.
 
-ДАННЫЕ КОМПАНИИ:
-Название: ${d.companyName}
-Отрасль: ${d.industry}, Регион: ${d.region}
-Описание: ${d.description}
-
-ФИНАНСЫ:
-Выручка: ${d.annualRevenue} руб., Рост: ${d.revenueGrowth}
-Прибыль: ${d.netProfit} руб., Расходы: ${d.mainCosts}
-Бухучёт: ${d.hasAccounting}, Финплан: ${d.hasFinancialPlan}
-
-МАРКЕТИНГ:
-Каналы: ${d.selectedChannels.join(', ')}
-Лидов/мес: ${d.monthlyLeads}, Конверсия: ${d.conversionRate}%
-Средний чек: ${d.avgCheck} руб.
-CRM: ${d.hasCRM}, Сайт: ${d.hasWebsite}, SMM: ${d.hasSMM}
-
-ОПЕРАЦИИ:
-Процессы: ${d.mainProcesses}
-Узкие места: ${d.bottlenecks}, ПО: ${d.softwareUsed}
-Автоматизация: ${d.hasAutomation}
-
-ПЕРСОНАЛ:
-Сотрудников: ${d.employeeCount}, Зарплата: ${d.avgSalary}
-Текучесть: ${d.turnoverRate}, HR: ${d.hasHRDept}
-
-СТРАТЕГИЯ:
-Цифровизация: ${d.digitalLevel}
-Инструменты: ${d.digitalTools.join(', ')}
+Компания: ${d.companyName}, ${d.industry}, ${d.region}
+Выручка: ${d.annualRevenue} руб., сотрудников: ${d.employeeCount}
+Проблемы: ${d.bottlenecks}
 Цели: ${d.strategicGoals}
-Вызовы: ${d.mainChallenges}
+Приоритет: ${d.growthPriority}
 
-Верни ТОЛЬКО JSON без лишнего текста:
+Формат:
 {
-  "summary": "2-3 предложения с ключевыми выводами",
+  "summary": "2 предложения об анализе",
   "tasks": [
     {
       "id": "1",
-      "title": "Название до 60 символов",
-      "description": "Что сделать и как",
+      "title": "Название до 50 символов",
+      "description": "Что сделать",
       "result": "Измеримый результат",
       "period": "3months",
       "category": "Финансы",
@@ -254,10 +215,9 @@ CRM: ${d.hasCRM}, Сайт: ${d.hasWebsite}, SMM: ${d.hasSMM}
   ]
 }
 
-period: "3months" | "6months" | "12months"
-category: "Финансы" | "Маркетинг" | "Операции" | "Персонал" | "Цифровизация" | "Стратегия"
-priority: 1 (важнее) до 5
-Минимум 3 задачи на каждый период, итого 9 задач.
+period: "3months"|"6months"|"12months"
+category: "Финансы"|"Маркетинг"|"Операции"|"Персонал"|"Цифровизация"|"Стратегия"
+Ровно 3 задачи на каждый период, итого 9 задач.
 ''';
 
   Roadmap _parseRoadmap(String companyName, Map<String, dynamic> json) {
@@ -266,7 +226,7 @@ priority: 1 (важнее) до 5
       throw Exception('Неверный формат: нет поля tasks');
     }
 
-    final tasks = (rawTasks as List<dynamic>).map((t) {
+    final tasks = (rawTasks as List).map((t) {
       final periodStr = t['period'] as String? ?? '3months';
       final period = periodStr == '12months'
           ? TaskPeriod.twelveMonths

@@ -22,7 +22,6 @@ class MyApp extends StatelessWidget {
         title: 'Бизнес Навигатор',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
           useMaterial3: true,
           scaffoldBackgroundColor: Colors.white,
           colorScheme: ColorScheme.fromSeed(

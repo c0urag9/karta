@@ -173,18 +173,17 @@ class _AuditScreenState extends State<AuditScreen> {
     ]),
   );
 
-  // ─── ИСПРАВЛЕНО: вызывает RoadmapProvider.generate() ───
+
   void _onNext() {
     if (currentStep < totalSteps - 1) {
       setState(() => currentStep++);
     } else {
-      // Сохраняем provider до закрытия диалога
+
       final roadmapProvider = context.read<RoadmapProvider>();
       final auditData = data;
 
       Navigator.pop(context);
 
-      // Запускаем генерацию дорожной карты
       if (auditData.wantsRoadmap) {
         roadmapProvider.generate(auditData);
       }
@@ -371,7 +370,7 @@ class _AuditScreenState extends State<AuditScreen> {
       const SizedBox(height: 16),
       _field('Главные вызовы', Icons.report_problem_outlined, initial: data.mainChallenges, onChanged: (v) => data.mainChallenges = v, maxLines: 2),
       const SizedBox(height: 20),
-      // Тогл генерации дорожной карты
+
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -392,7 +391,6 @@ class _AuditScreenState extends State<AuditScreen> {
     ]);
   }
 
-  // ── Вспомогательные виджеты ─────────────────
 
   Widget _stepTitle(String title, String subtitle) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
     Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
